@@ -158,7 +158,7 @@ const PhotoUploader = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full my-5">
+    <div className="flex flex-col items-center min-h-screen mt-10 justify-center  my-5">
       {!showUploadOption && (
         <div
           id="passcheck"
