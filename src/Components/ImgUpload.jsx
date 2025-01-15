@@ -9,6 +9,7 @@ const PhotoUploader = () => {
   const [imageUrl, setImageUrl] = useState("");
   const [dimensions, setDimensions] = useState("");
   const [copyright, setCopyright] = useState("");
+  const [Name, setName] = useState("");
   const [collections, setCollections] = useState([]);
   const [downloadable, setDownloadable] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -126,7 +127,7 @@ const PhotoUploader = () => {
       const uploadedUrl = uploadResponse.data.imageUrl;
 
       const metadata = {
-        name: filename,
+        name: Name,
         author: author, // Replace with actual author
         url: uploadedUrl,
         dimensions,
@@ -213,6 +214,16 @@ const PhotoUploader = () => {
                 className="file-input file-input-bordered text-green-500 my-3 w-full max-w-xs"
               />
             </div>
+            <p className="text-xl text-green-500 flex items-start w-full">
+              Img Name
+            </p>
+            <input
+              type="text"
+              placeholder="Add Img Name"
+              value={Name}
+              onChange={(e) => setName(e.target.value)}
+              className="input input-bordered my-3 w-full max-w-xs"
+            />
             <p className="text-xl text-green-500 flex items-start w-full">
               Copyright Link
             </p>
