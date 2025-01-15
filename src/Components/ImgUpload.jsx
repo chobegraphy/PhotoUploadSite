@@ -158,38 +158,43 @@ const PhotoUploader = () => {
 
   return (
     <div className="flex flex-col items-center justify-center h-full my-5">
-      <div id="passcheck" className="flex flex-col items-center justify-center">
-        <input
-          type="email"
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter Email"
-          className="file-input file-input-bordered text-green-500 my-3 w-full px-3 "
-        />
-        <input
-          type="text"
-          placeholder="Enter Password"
-          onChange={(e) => setPassword(e.target.value)}
-          className="file-input file-input-bordered text-green-500  w-full px-3 "
-        />
-        <button
-          onClick={() => {
-            if (
-              email === "Chobegraphy@gmail.com" &&
-              password === "Chobegraphy1011"
-            ) {
-              setShowUploadOption(true);
-            } else {
-              setShowUploadOption(false);
-              window.location.href =
-                "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
-            }
-          }}
-          type="button"
-          className="btn btn-md my-3 bg-green-500 text-white py-2 px-10 btn-outline"
+      {!showUploadOption && (
+        <div
+          id="passcheck"
+          className="flex flex-col items-center justify-center"
         >
-          login
-        </button>
-      </div>
+          <input
+            type="email"
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter Email"
+            className="file-input file-input-bordered text-green-500 my-3 w-full px-3 "
+          />
+          <input
+            type="text"
+            placeholder="Enter Password"
+            onChange={(e) => setPassword(e.target.value)}
+            className="file-input file-input-bordered text-green-500  w-full px-3 "
+          />
+          <button
+            onClick={() => {
+              if (
+                email === "Chobegraphy@gmail.com" &&
+                password === "Chobegraphy1011"
+              ) {
+                setShowUploadOption(true);
+              } else {
+                setShowUploadOption(false);
+                window.location.href =
+                  "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+              }
+            }}
+            type="button"
+            className="btn btn-md my-3 bg-green-500 text-white py-2 px-10 btn-outline"
+          >
+            login
+          </button>
+        </div>
+      )}
       {showUploadOption && (
         <>
           {" "}
@@ -282,7 +287,7 @@ const PhotoUploader = () => {
               </button>
             ) : (
               <p className="text-sm text-red-500 flex items-start w-fit px-3 max-md:mr-auto py-2  my-3">
-                Storage Almost Full &nbsp;
+                Storage Almost Full
                 <a
                   href="https://wa.me/+8801980389400?text=Please%20change%20the%20chobegraphy%20photo%20upload%20storage%20repo,%20current%20size%20is%20almost%20full"
                   target="_blank"
@@ -290,7 +295,7 @@ const PhotoUploader = () => {
                 >
                   contact
                 </a>
-                &nbsp; dev to change storage
+                dev to change storage
               </p>
             )}
           </form>
