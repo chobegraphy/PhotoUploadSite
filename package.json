@@ -11,6 +11,10 @@
   },
   "dependencies": {
     "axios": "^1.7.9",
+    "exif-js": "^2.3.0",
+    "exifreader": "^4.26.1",
+    "extract-colors": "^4.1.1",
+    "fast-average-color": "^9.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

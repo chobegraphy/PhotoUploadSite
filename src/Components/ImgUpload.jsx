@@ -1,12 +1,14 @@
 import axios from "axios";
+import ExifReader from "exifreader"; // Import ExifReader
+import { extractColors } from "extract-colors";
 import { useEffect, useState } from "react";
-
 const PhotoUploader = () => {
   const [photo, setPhoto] = useState(null);
   const [filename, setFilename] = useState("");
   const [uploadStatus, setUploadStatus] = useState("");
   const [author, setAuthor] = useState("Chobegraphy"); // Replace with actual author
   const [imageUrl, setImageUrl] = useState("");
+  const [imageUrl2, setImageUrl2] = useState("");
   const [dimensions, setDimensions] = useState("");
   const [copyright, setCopyright] = useState("");
   const [Name, setName] = useState("");
@@ -17,6 +19,23 @@ const PhotoUploader = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showUploadOption, setShowUploadOption] = useState(false);
+  const [encodedPhoto, setEncodedPhoto] = useState(null);
+  const [fileSize, setFileSize] = useState(0);
+  const [colors, setColors] = useState(null);
+  const [exifData, setExifData] = useState({
+    aperture: "",
+    exposureTime: "",
+    flash: "",
+    iso: "",
+    model: "",
+    software: "",
+    datetimeOriginal: "",
+    focalLength: "",
+    creatorTool: "",
+    subjectDistance: "",
+    imageHeight: "",
+    imageWidth: "",
+  });
   const suggestions = [
     "Featured",
     "Nature",
@@ -55,7 +74,54 @@ const PhotoUploader = () => {
       reader.onerror = (error) => reject(error);
     });
   };
+  const convertToBase64Thumbnail = (file, maxWidth = 20) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const img = new Image();
+        img.src = reader.result;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
 
+          // Calculate new dimensions
+          const scaleFactor = maxWidth / img.width;
+          canvas.width = maxWidth;
+          canvas.height = img.height * scaleFactor;
+
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.7).split(",")[1]); // Convert to Base64 (JPEG, 70% quality)
+        };
+        img.onerror = (error) => reject(error);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+  // Extract EXIF data using ExifReader
+  const extractExifData = (file) => {
+    // Extract EXIF data
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const exif = ExifReader.load(e.target.result);
+      const extractedExifData = {
+        aperture: exif.ApertureValue?.description || "",
+        exposureTime: exif.ExposureTime?.description || "",
+        flash: exif.Flash?.description || "",
+        iso: exif.ISOSpeedRatings?.description || "",
+        model: exif.Model?.description || "",
+        software: exif.Software?.description || "",
+        datetimeOriginal: exif.DateTimeOriginal?.description || "",
+        focalLength: exif.FocalLength?.description || "",
+        creatorTool: exif.CreatorTool?.description || "",
+        subjectDistance: exif.SubjectDistance?.description || "",
+      };
+
+      // Save EXIF data to state
+      setExifData(extractedExifData);
+    };
+    reader.readAsArrayBuffer(file);
+  };
   const getDimensions = (file) => {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -83,7 +149,19 @@ const PhotoUploader = () => {
       setFilename(file.name); // Set the file name
       const base64 = await convertToBase64(file); // Convert file to base64
       setPhoto(base64); // Store the base64 string in state
+      extractColors(`data:image/jpeg;base64,${base64}`).then((col) => {
+        console.log(col);
+        setColors(col);
+      });
+      console.log(colors);
+      const fileSizeInBytes = file.size; // Size in bytes
+      const fileSizeInMB = (fileSizeInBytes / (1024 * 1024)).toFixed(2);
+      setFileSize(fileSizeInMB);
+      const thumbnailBase64 = await convertToBase64Thumbnail(file);
+      setEncodedPhoto(thumbnailBase64);
       getDimensions(file);
+      setImageUrl2(`data:image/jpeg;base64,${thumbnailBase64}`);
+      extractExifData(file);
     }
   };
 
@@ -115,48 +193,61 @@ const PhotoUploader = () => {
           filename,
         }
       );
-      const formData = new FormData();
-      formData.append("image", photo);
-      const imgbbResponse = await axios.post(
+      const formData1 = new FormData();
+      formData1.append("image", encodedPhoto);
+      const imgbbResponse1 = await axios.post(
         "https://api.imgbb.com/1/upload?key=eada499cd6dc5e09c832c88531a41acb",
-        formData
+        formData1
       );
-      const imgbbData = imgbbResponse.data.data;
-      const thumbnail = imgbbData.medium.url;
-      console.log(uploadResponse.data.imageUrl);
-      const uploadedUrl = uploadResponse.data.imageUrl;
+      const imgbbData1 = imgbbResponse1.data.data;
+      if (imgbbData1.display_url) {
+        const formData = new FormData();
+        formData.append("image", photo);
+        const imgbbResponse = await axios.post(
+          "https://api.imgbb.com/1/upload?key=eada499cd6dc5e09c832c88531a41acb",
+          formData
+        );
+        const imgbbData = imgbbResponse.data.data;
+        const thumbnail = imgbbData.medium.url;
+        console.log(uploadResponse.data.imageUrl);
+        const uploadedUrl = uploadResponse.data.imageUrl;
 
-      const metadata = {
-        name: Name,
-        author: author, // Replace with actual author
-        url: uploadedUrl,
-        dimensions,
-        collections: collections.join(", "),
-        copyright,
-        downloadable,
-        thumbnail,
-      };
+        const metadata = {
+          name: Name,
+          author: author, // Replace with actual author
+          url: uploadedUrl,
+          dimensions,
+          collections: collections.join(", "),
+          copyright,
+          downloadable,
+          thumbnail,
+          encodedUrl: imgbbData1.display_url,
+          exifData,
+          fileSize,
+          colors,
+        };
 
-      // Send metadata to a secondary API
-      const metadataResponse = await axios.post(
-        "https://chobegraphy-server.vercel.app/api/add-data",
-        metadata
-      );
-      console.log(metadataResponse.data);
-      if (metadataResponse.data.message) {
-        setUploadStatus("Success! File uploaded ");
-        setImageUrl(thumbnail);
-      } else {
-        setUploadStatus("File upload failed.");
+        // Send metadata to a secondary API
+        const metadataResponse = await axios.post(
+          "https://chobegraphy-server.vercel.app/api/add-data",
+          metadata
+        );
+        console.log(metadataResponse.data);
+        if (metadataResponse.data.message) {
+          setUploadStatus("Success! File uploaded ");
+          setImageUrl(thumbnail);
+        } else {
+          setUploadStatus("File upload failed.");
+        }
+        setLoading(false);
       }
-      setLoading(false);
     } catch (error) {
       console.error("Upload failed:", error);
       setUploadStatus("An error occurred while uploading.");
       setLoading(false);
     }
   };
-
+  console.log(exifData);
   return (
     <div className="flex flex-col items-center min-h-screen mt-10 justify-center  my-5">
       {!showUploadOption && (
@@ -198,7 +289,35 @@ const PhotoUploader = () => {
       )}
       {showUploadOption && (
         <>
-          {" "}
+          <div>
+            {colors !== null &&
+              colors.map((color) => (
+                <p
+                  style={{ backgroundColor: color?.hex }}
+                  key={color}
+                  className={`text-3xl  flex items-start w-fit px-3 max-md:mr-auto py-2 rounded my-3 text-white`}
+                >
+                  {color?.hex}
+                </p>
+              ))}
+          </div>
+          {fileSize}mb
+          {exifData && (
+            <div>
+              <h3>EXIF Data:</h3>
+              <pre>{JSON.stringify(exifData, null, 2)}</pre>
+              <pre>{JSON.stringify(exifData?.Image_Height, null, 2)}</pre>
+            </div>
+          )}
+          {imageUrl2 && (
+            <div>
+              <img
+                src={imageUrl2} // Display the thumbnail here
+                alt="Thumbnail"
+                className="max-w-2xl rounded-lg max-md:w-[200px]"
+              />
+            </div>
+          )}{" "}
           <h2 className="font-serif text-3xl text-green-500">
             Upload Photo to Chobegraphy Storage
           </h2>
@@ -285,7 +404,7 @@ const PhotoUploader = () => {
               </label>
             </div>
 
-            {repoSize > 4.7 ? (
+            {repoSize < 4.7 ? (
               <button
                 type="submit"
                 className="btn bg-green-600 px-4 outline-none text-white hover:bg-white hover:text-green-500"
